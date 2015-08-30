@@ -25,8 +25,8 @@ public class getFactorUtil {
 
     }
 
-    public static double getFactor(String currencyQuery, String fromCurrency, String toCurrency)
-            throws JSONException {
+    public static double getFactor(String currencyQuery, String fromCurrency, String toCurrency,
+                                   int type) throws JSONException {
 
         final String LOG_TAG = null;
         double conversionFactor = 0;
@@ -35,7 +35,24 @@ public class getFactorUtil {
 
             JSONObject currencyQueryObject = new JSONObject(currencyQuery);
             JSONObject quotesObject = currencyQueryObject.getJSONObject("quotes");
-            conversionFactor = quotesObject.getDouble(fromCurrency + toCurrency);
+
+            switch (type)   {
+                case 0:
+                    conversionFactor = quotesObject.getDouble(fromCurrency + toCurrency);
+                    break;
+                case 1:
+                    conversionFactor = 1 / (quotesObject.getDouble(fromCurrency + toCurrency));
+                    break;
+                case 2:
+                    /*
+                    The USD to Currency conversion value for the two required currencies is
+                    obtained and these values are used to obtain the conversion factor between
+                    the two required currencies
+                     */
+                    double tempFrom = quotesObject.getDouble("USD" + fromCurrency);
+                    double tempTo = quotesObject.getDouble("USD" + toCurrency);
+                    conversionFactor = tempFrom / tempTo;
+            }
 
 
         } catch (JSONException e) {

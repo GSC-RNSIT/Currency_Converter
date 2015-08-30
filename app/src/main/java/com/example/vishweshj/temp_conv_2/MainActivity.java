@@ -15,7 +15,6 @@ import org.json.JSONException;
 
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Objects;
 
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -154,13 +154,29 @@ public class MainActivity extends ActionBarActivity implements OnItemSelectedLis
                 final String FORMAT = "&format=1";
 
                 /*Limitation - Since the API used for conversion is a free plan, it only allows
-                one source currency to be set for a period of 10 minutes. Thus when source
-                currency is changed after the first use, the converted value returned is 0.0
+                one source currency, USD. Thus when source currency is changed, the converted
+                value returned is 0.0
                  */
 
 
-                URL url = new URL(BASE_URL + ACCESS_KEY + fromCurrency + CURRENCY +
-                        toCurrency + FORMAT);
+                URL url;
+
+                /*Due to the above mentioned limitations, the following method is used to
+                fetch the URL in order to facilitate usage of different source currencies
+                 */
+
+                if(fromCurrency.equals("USD"))  {
+                    url = new URL(BASE_URL + ACCESS_KEY + fromCurrency + CURRENCY +
+                            toCurrency + FORMAT);
+                }
+                else if(toCurrency.equals("USD"))   {
+                    url = new URL(BASE_URL + ACCESS_KEY + toCurrency + CURRENCY +
+                            fromCurrency + FORMAT);
+                }
+                else    {
+                    url = new URL(BASE_URL + ACCESS_KEY + "USD" + CURRENCY +
+                            fromCurrency + "," + toCurrency + FORMAT);
+                }
 
 
 
@@ -188,8 +204,28 @@ public class MainActivity extends ActionBarActivity implements OnItemSelectedLis
                 }
 
                 currencyQuery = buffer.toString();
-                getFactorUtil.conversionFactor = getFactorUtil.getFactor(currencyQuery,
-                        fromCurrency,toCurrency);
+
+                /*
+                A new parameter "type" is used in the getFactorUtil.getFactor() function.
+                It is used to specify the three types of conversions used to work around the
+                limitation.
+                 */
+
+                if(fromCurrency.equals("USD")) {
+                    //USD to any other currency
+                    getFactorUtil.conversionFactor = getFactorUtil.getFactor(currencyQuery,
+                            fromCurrency, toCurrency,0);
+                }
+                else if(toCurrency.equals("USD")) {
+                    //Other currencies to USD
+                    getFactorUtil.conversionFactor = getFactorUtil.getFactor(currencyQuery,
+                            toCurrency, fromCurrency,1);
+                }
+                else {
+                    //Neither currency is USD
+                    getFactorUtil.conversionFactor = getFactorUtil.getFactor(currencyQuery,
+                            toCurrency, fromCurrency,2);
+                }
 
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Error ", e);
